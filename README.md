@@ -62,4 +62,27 @@ Change what is visible on your Desktop:
 ## Security & Privacy
 
 Aether Workspace runs **100% locally and offline**. It has no cloud sync features, does not collect analytics, and stores all indices, logs, and files safely in your home directory (`~/.aether_vault/`).
-EOF
+
+---
+
+## Disabling & Enabling Services
+
+### To temporarily disable Aether services:
+1. Stop the background filing daemon:
+   ```bash
+   launchctl unload ~/Library/LaunchAgents/com.aether.watcher.plist
+   ```
+2. Restore default macOS screenshot destination to the Desktop:
+   ```bash
+   defaults write com.apple.screencapture location ~/Desktop && killall SystemUIServer
+   ```
+
+### To re-enable Aether services:
+1. Restart the background filing daemon:
+   ```bash
+   launchctl load ~/Library/LaunchAgents/com.aether.watcher.plist
+   ```
+2. Redirect screenshots back to the Aether Inbox:
+   ```bash
+   defaults write com.apple.screencapture location ~/.aether_vault/00_Inbox && killall SystemUIServer
+   ```
