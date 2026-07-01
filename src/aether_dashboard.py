@@ -18,6 +18,21 @@ C_GRAY = "\033[1;30m"
 C_RESET = "\033[0m"
 C_BOLD = "\033[1m"
 
+def play_loading_animation():
+    animation = [
+        "  ⠋ Scanning digital desktop...  ",
+        "  ⠙ Reading Aether Vault...      ",
+        "  ⠹ Scanning active projects...  ",
+        "  ⠸ Compiling disk metrics...    ",
+        "  ⠼ Loading TUI dashboard...     "
+    ]
+    for frame in animation:
+        sys.stdout.write(f"\r{C_CYAN}{frame}{C_RESET}")
+        sys.stdout.flush()
+        time.sleep(0.18)
+    sys.stdout.write("\r" + " " * 35 + "\r")
+    sys.stdout.flush()
+
 def get_inbox_count():
     if not os.path.exists(INBOX_DIR):
         return 0
@@ -79,6 +94,7 @@ def get_last_log_entries(n=3):
         return ["Failed to read background daemon logs."]
 
 def render_dashboard():
+    play_loading_animation()
     # 1. Fetch data
     mode = get_current_mode()
     inbox_count = get_inbox_count()
