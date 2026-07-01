@@ -1,10 +1,22 @@
 import os
 import time
+import sys
 
 VAULT_DIR = os.path.expanduser("~/.aether_vault")
 DESKTOP_DIR = os.path.expanduser("~/Desktop")
 PROJECTS_DIR = os.path.join(VAULT_DIR, "30_Active_Projects")
 INBOX_DIR = os.path.join(VAULT_DIR, "00_Inbox")
+LOG_FILE = os.path.join(VAULT_DIR, "aether_daemon.log")
+
+# ANSI Color codes for styled output
+C_CYAN = "\033[1;36m"
+C_GREEN = "\033[1;32m"
+C_BLUE = "\033[1;34m"
+C_YELLOW = "\033[1;33m"
+C_RED = "\033[1;31m"
+C_GRAY = "\033[1;30m"
+C_RESET = "\033[0m"
+C_BOLD = "\033[1m"
 
 def get_inbox_count():
     if not os.path.exists(INBOX_DIR):
@@ -54,35 +66,69 @@ def get_current_mode():
         return "STUDY"
     elif "Administrative" in links:
         return "ADMIN"
-    return "Custom"
+    return "CUSTOM"
+
+def get_last_log_entries(n=3):
+    if not os.path.exists(LOG_FILE):
+        return ["No logs found. Daemon may not be active."]
+    try:
+        with open(LOG_FILE, "r") as f:
+            lines = f.readlines()
+            return [l.strip() for l in lines[-n:]]
+    except:
+        return ["Failed to read background daemon logs."]
 
 def render_dashboard():
-    print("\033[1;36m" + "="*55)
-    print("                 AETHER WORKSPACE STATUS                 ")
-    print("="*55 + "\033[0m")
-    
+    # 1. Fetch data
     mode = get_current_mode()
     inbox_count = get_inbox_count()
-    print(f"  \033[1mActive Mode:\033[0m  \033[1;32m{mode}\033[0m")
-    print(f"  \033[1mInbox Status:\033[0m {inbox_count} pending files in 00_Inbox")
-    print("\033[1;36m" + "-"*55 + "\033[0m")
     
-    print("  \033[1mActive Projects Info:\033[0m")
+    # Format Mode colors
+    mode_color = C_GRAY
+    if mode == "ALL":
+        mode_color = C_CYAN
+    elif mode == "WORK":
+        mode_color = C_BLUE
+    elif mode == "STUDY":
+        mode_color = C_GREEN
+    elif mode == "ADMIN":
+        mode_color = C_YELLOW
+
+    # Title Block
+    print(f"{C_CYAN}┌────────────────────────────────────────────────────────┐{C_RESET}")
+    print(f"{C_CYAN}│{C_RESET} {C_BOLD}{'A E T H E R   W O R K S P A C E':^54} {C_RESET}{C_CYAN}│{C_RESET}")
+    print(f"{C_CYAN}└────────────────────────────────────────────────────────┘{C_RESET}")
     
+    # Section: System Status
+    print(f"  {C_BOLD}SYSTEM STATUS{C_RESET}")
+    print(f"  ├─ Mode:         {mode_color}{mode}{C_RESET}")
+    print(f"  └─ Inbox Queue:  {C_YELLOW}{inbox_count}{C_RESET} files pending in 00_Inbox")
+    print("")
+
+    # Section: Projects Telemetry
+    print(f"  {C_BOLD}PROJECTS TELEMETRY{C_RESET}")
+    print(f"  ┌──────────────────────┬─────────────┬─────────────────┐")
+    
+    # Pixel-perfect title alignment
+    name_hdr = f"{C_BOLD}{'Project Name':<20}{C_RESET}"
+    size_hdr = f"{C_BOLD}{'Disk Size':<11}{C_RESET}"
+    status_hdr = f"{C_BOLD}{'Activity Status':<15}{C_RESET}"
+    print(f"  │ {name_hdr} │ {size_hdr} │ {status_hdr} │")
+    print(f"  ├──────────────────────┼─────────────┼─────────────────┤")
+    
+    total_savings_mb = 0
     if not os.path.exists(PROJECTS_DIR):
-        print("   No projects directory found.")
+        print(f"  │ {C_GRAY}{'No active projects folder':^20}{C_RESET} │ {C_GRAY}{'-':^11} │ {C_GRAY}{'-':^15} │")
     else:
         projects = [d for d in os.listdir(PROJECTS_DIR) if os.path.isdir(os.path.join(PROJECTS_DIR, d)) and not d.startswith('.')]
-        
         if not projects:
-            print("   No projects found inside 30_Active_Projects.")
+            print(f"  │ {C_GRAY}{'No projects found':^20}{C_RESET} │ {C_GRAY}{'-':^11} │ {C_GRAY}{'-':^15} │")
         else:
-            total_savings_mb = 0
             for p in sorted(projects):
                 p_path = os.path.join(PROJECTS_DIR, p)
-                
                 size_mb = get_dir_size_mb(p_path)
                 
+                # Check for savings
                 archive_savings = 0
                 for f in os.listdir(p_path):
                     if f.endswith(".tar.gz"):
@@ -93,27 +139,54 @@ def render_dashboard():
                             pass
                 total_savings_mb += archive_savings
                 
+                # Calculate active time
                 last_mtime = get_last_modified_date(p_path)
                 if last_mtime == 0:
-                    status_str = "\033[1;30mUNKNOWN\033[0m"
+                    status_text = "UNKNOWN"
+                    status_color = C_GRAY
                 else:
                     days_idle = (time.time() - last_mtime) / (24 * 60 * 60)
                     if days_idle > 45:
-                        status_str = f"\033[1;31mSTALE\033[0m (idle {round(days_idle)} days) -> \033[3mdesk prune {p}\033[0m"
+                        status_text = f"STALE ({round(days_idle)}d)"
+                        status_color = C_RED
                     else:
-                        status_str = f"\033[1;32mACTIVE\033[0m (idle {round(days_idle)} days)"
+                        status_text = f"ACTIVE ({round(days_idle)}d)"
+                        status_color = C_GREEN
                 
                 is_compressed = any(f.endswith(".tar.gz") for f in os.listdir(p_path))
-                comp_tag = " [ZIP]" if is_compressed else ""
+                name_display = f"{p} [ZIP]" if is_compressed else p
                 
-                print(f"   • \033[1m{p}\033[0m{comp_tag:<6} [{size_mb} MB]  - {status_str}")
+                # Format print columns safely (padding before coloring)
+                col1 = f"{name_display:<20}"
+                col2 = f"{size_mb:>8} MB"
+                col3 = f"{status_color}{status_text:<15}{C_RESET}"
                 
-            if total_savings_mb > 0:
-                savings_gb = round(total_savings_mb / 1024, 2)
-                print(f"\n  \033[1mStorage Optimizer:\033[0m Reclaimed {savings_gb} GB via dependency compression.")
+                print(f"  │ {col1} │ {col2} │ {col3} │")
                 
-    print("\033[1;36m" + "="*55 + "\033[0m")
-    print("  \033[3mCommands: desk mode [mode] | desk ask [query] | desk prune\033[0m")
+    print(f"  └──────────────────────┴─────────────┴─────────────────┘")
+    
+    # Storage Optimizer Info
+    if total_savings_mb > 0:
+        savings_gb = round(total_savings_mb / 1024, 2)
+        print(f"  {C_GREEN}✓{C_RESET} {C_BOLD}Storage Saved:{C_RESET} {savings_gb} GB via dependency archiving")
+        print("")
+    else:
+        print("")
+
+    # Section: Daemon Logs
+    print(f"  {C_BOLD}DAEMON LOGGER (Latest activity){C_RESET}")
+    logs = get_last_log_entries(3)
+    for i, log_entry in enumerate(logs):
+        prefix = "  ├─" if i < len(logs) - 1 else "  └─"
+        if len(log_entry) > 52:
+            log_entry = log_entry[:49] + "..."
+        print(f"{prefix} {C_GRAY}{log_entry}{C_RESET}")
+    
+    # Footer Command bar
+    print("")
+    print(f"{C_CYAN}┌────────────────────────────────────────────────────────┐{C_RESET}")
+    print(f"{C_CYAN}│{C_RESET} {C_BOLD}Commands:{C_RESET} desk mode [mode] | desk ask [q] | desk prune  {C_CYAN}│{C_RESET}")
+    print(f"{C_CYAN}└────────────────────────────────────────────────────────┘{C_RESET}")
 
 if __name__ == "__main__":
     render_dashboard()

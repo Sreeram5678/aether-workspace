@@ -4,7 +4,7 @@
 
 ---
 
-## 🚀 Core Features
+## Core Features
 
 1.  **Dynamic Viewports (Context Switching):** Instantly swap what directories are visible on your Desktop. Hide academic files when coding, and hide code repositories when studying.
 2.  **Context-Aware Screenshot Auto-Namer:** Automatically captures the frontmost app name and active window title when you capture a screenshot, renaming files from `Screenshot...png` to `SS_[App]_[WindowName]_[Date]_[Time].png`.
@@ -14,7 +14,7 @@
 
 ---
 
-## 📦 Installation & Setup
+## Installation & Setup
 
 Simply clone the repository and run the installer:
 
@@ -29,7 +29,7 @@ Restart your terminal or run `source ~/.zshrc` to activate the `desk` alias.
 
 ---
 
-## 🛠️ CLI Reference & Cheat-sheet
+## CLI Reference & Cheat-sheet
 
 Use the `desk` command to control your workspace:
 
@@ -59,7 +59,7 @@ Change what is visible on your Desktop:
 
 ---
 
-## 🔒 Security & Privacy
+## Security & Privacy
 
 Aether Workspace runs **100% locally and offline**. It has no cloud sync features, does not collect analytics, and stores all indices, logs, and files safely in your home directory (`~/.aether_vault/`).
 EOF
