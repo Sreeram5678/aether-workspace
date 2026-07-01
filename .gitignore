@@ -1,0 +1,44 @@
+# macOS System Files
+.DS_Store
+.localized
+.tmp.*
+
+# Python Cache & Build
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.ipynb_checkpoints/
+
+# Virtual Environments
+venv/
+.venv/
+env/
+
+# Logs & Telemetry
+*.log
+aether_daemon.log
+daemon_test.log
+aether_daemon_stdout.log
+aether_daemon_stderr.log
+
+# Caches & Local Indexes
+search_index.json
+
+# Local Testing / User Data
+*.pdf
+*.zip
+*.tar.gz
+*.mov
+*.png
+*.jpg
+*.jpeg
+*.heic
+*.avif
+*.webp
+/00_Inbox/
+/10_GATE_Prep/
+/20_College_Academics/
+/30_Active_Projects/
+/40_Resources_Reference/
+/50_Archive/
